@@ -1,0 +1,30 @@
+version: '1.0'
+stages:
+  - prepare
+  - build
+  - release
+steps:
+  main_clone:
+    title: 'Cloning main repository...'
+    type: git-clone
+    repo: '${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}'
+    revision: '${{CF_REVISION}}'
+    stage: prepare
+  BuildMyApp:
+    title: Compiling go code
+    stage: build
+    image: 'golang:1.12'
+    commands:
+      - go build
+  GetGitToken:
+    title: Reading Github token
+    stage: release
+    image: codefresh/cli
+    commands:
+      - cf_export GITHUB_TOKEN=$(codefresh get context github-1 --decrypt -o yaml | yq -y .spec.data.auth.password)     
+  ReleaseMyApp:
+    title: Creating packages
+    stage: release
+    image: 'goreleaser/goreleaser'
+    commands:
+      - goreleaser --rm-dist 
